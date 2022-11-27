@@ -58,10 +58,8 @@ pub(crate) async fn _ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
         "2",
         "-ar",
         "48000",
-        "-preset",
-        "ultrafast",
         "-acodec",
-        "libmp3lame",
+        "pcm_f32le",
         "-",
     ];
 
