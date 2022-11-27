@@ -23,12 +23,35 @@ use std::{
 type Recreator = Box<dyn Restart + Send + 'static>;
 type RecreateChannel = Receiver<Result<(Box<Input>, Recreator)>>;
 
+impl Clone for Recreator {
+    fn clone(&self) -> Self {
+        self.cheat_clone()
+    }
+}
+
 // Use options here to make "take" more doable from a mut ref.
-#[derive(Clone)]
 enum LazyProgress {
     Dead(Box<Metadata>, Option<Recreator>, Codec, Container),
     Live(Box<Input>, Option<Recreator>),
     Working(Codec, Container, bool, RecreateChannel),
+}
+
+impl Clone for LazyProgress {
+    fn clone(&self) -> Self {
+        match self {
+            LazyProgress::Dead(metadata, recreator, codec, container) => {
+                LazyProgress::Dead(metadata.clone(), recreator.clone(), codec.clone(), container.clone())
+            }
+            LazyProgress::Live(input, recreator) => {
+                LazyProgress::Dead(input.metadata.clone(), recreator.clone(), input.kind.clone(), input.container.clone())
+            }
+            LazyProgress::Working(codec, container, _, channel) => {
+                let recv = channel.recv().unwrap();
+                let meta_container = recv.unwrap();
+                LazyProgress::Dead(meta_container.0.metadata.clone(), Some(meta_container.1.clone()), codec.clone(), container.clone())
+            }
+        }
+    }
 }
 
 impl Debug for LazyProgress {
@@ -166,6 +189,9 @@ pub trait Restart {
     /// should occupy few resources when not live BUT have as much information as
     /// possible made available at creation.
     async fn lazy_init(&mut self) -> Result<(Option<Metadata>, Codec, Container)>;
+
+    /// Provides a cheating way to clone a restart instance
+    fn cheat_clone(&self) -> Box<dyn Restart + Send>;
 }
 
 struct FfmpegRestarter<P>
@@ -175,10 +201,19 @@ where
     path: P,
 }
 
+
+impl<P> Clone for FfmpegRestarter<P> where P: AsRef<OsStr> + Clone + Send + Sync {
+    fn clone(&self) -> Self {
+        FfmpegRestarter {
+            path: self.path.clone()
+        }
+    }
+}
+
 #[async_trait]
 impl<P> Restart for FfmpegRestarter<P>
 where
-    P: AsRef<OsStr> + Send + Sync,
+    P: AsRef<OsStr> + Send + Sync + Clone + 'static,
 {
     async fn call_restart(&mut self, time: Option<Duration>) -> Result<Input> {
         if let Some(time) = time {
@@ -215,19 +250,31 @@ where
             .await
             .map(|(_stereo, metadata)| (Some(metadata), Codec::FloatPcm, Container::Raw))
     }
+
+    fn cheat_clone(&self) -> Box<dyn Restart + Send + 'static> {
+        Box::new(self.clone())
+    }
 }
 
 struct YtdlRestarter<P>
 where
-    P: AsRef<str> + Send + Sync,
+    P: AsRef<str> + Send + Sync + 'static,
 {
     uri: P,
+}
+
+impl<P> Clone for YtdlRestarter<P> where P: AsRef<str> + Send + Sync + Clone {
+    fn clone(&self) -> Self {
+        YtdlRestarter {
+            uri: self.uri.clone()
+        }
+    }
 }
 
 #[async_trait]
 impl<P> Restart for YtdlRestarter<P>
 where
-    P: AsRef<str> + Send + Sync,
+    P: AsRef<str> + Send + Sync + Clone,
 {
     async fn call_restart(&mut self, time: Option<Duration>) -> Result<Input> {
         if let Some(time) = time {
@@ -243,6 +290,10 @@ where
         _ytdl_metadata(self.uri.as_ref())
             .await
             .map(|m| (Some(m), Codec::FloatPcm, Container::Raw))
+    }
+
+    fn cheat_clone(&self) -> Box<dyn Restart + Send + 'static> {
+        Box::new(self.clone())
     }
 }
 
