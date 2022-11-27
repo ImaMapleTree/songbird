@@ -24,6 +24,7 @@ type Recreator = Box<dyn Restart + Send + 'static>;
 type RecreateChannel = Receiver<Result<(Box<Input>, Recreator)>>;
 
 // Use options here to make "take" more doable from a mut ref.
+#[derive(Clone)]
 enum LazyProgress {
     Dead(Box<Metadata>, Option<Recreator>, Codec, Container),
     Live(Box<Input>, Option<Recreator>),
