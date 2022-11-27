@@ -70,7 +70,7 @@ impl Debug for LazyProgress {
 /// [`Input`]: Input
 /// [`Memory`]: cached::Memory
 /// [`Compressed`]: cached::Compressed
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Restartable {
     async_handle: Option<Handle>,
     position: usize,
