@@ -157,7 +157,7 @@ impl Restartable {
     /// The cost of restarting and seeking will probably be *very* high:
     /// expect a pause if you seek backwards.
     pub async fn ytdl_search(name: impl AsRef<str>, lazy: bool) -> Result<Self> {
-        Self::ytdl(format!("ytsearch1:{}", name.as_ref()), lazy).await
+        Self::ytdl(format!("ytsearch:{}", name.as_ref()), lazy).await
     }
 
     pub(crate) fn prep_with_handle(&mut self, handle: Handle) {

@@ -82,7 +82,7 @@ use tracing::{debug, error};
 ///
 /// [`Reader`]: Reader
 /// [module root]: super
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Input {
     /// Information about the played source.
     pub metadata: Box<Metadata>,

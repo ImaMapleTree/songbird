@@ -10,7 +10,7 @@ license = "ISC"
 name = "songbird"
 readme = "README.md"
 repository = "https://github.com/ImaMapleTree/songbird.git"
-version = "0.3.22-rc0"
+version = "0.3.22-rc1"
 
 [dependencies]
 derivative = "2"
