@@ -172,6 +172,15 @@ impl Restartable {
             let _ = Read::read(self, &mut bytes[..]);
         }
     }
+
+    /// Gets metadata
+    pub fn get_metadata(&self) -> Option<Box<Metadata>> {
+        match &self.source {
+            LazyProgress::Dead(meta, _, _, _) => Some(meta.clone()),
+            LazyProgress::Live(input, _) => Some(input.metadata.clone()),
+            LazyProgress::Working(_, _, _, recr) => Some(recr.recv().ok()?.ok()?.0.metadata.clone())
+        }
+    }
 }
 
 /// Trait used to create an instance of a [`Reader`] at instantiation and when
